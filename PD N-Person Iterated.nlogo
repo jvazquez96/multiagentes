@@ -35,6 +35,7 @@ turtles-own [
                     ;;with other turtles (indexed by WHO values)
   rounds-played     ;;number of iterations that has been alive
   partner-turtle    ;;the partner turtle
+  blocked-turtles   ;;list of blocked turtles
 ]
 
 
@@ -87,6 +88,7 @@ to setup-common-variables
     setxy random-xcor random-ycor
     set rounds-played 0
     set partner-turtle nobody
+    set blocked-turtles []
   ]
   setup-history-lists ;;initialize PARTNER-HISTORY list in all turtles
 end
@@ -129,20 +131,20 @@ to evolve
   let sum-score 0 ;; Inicializar la sumatoria
   ask turtles [ ;; Para todas las tortugas
     if rounds-played > 0 [
-      set sum-score sum-score + score / rounds-played
+      set sum-score sum-score + score / rounds-played ;; Calcula la sumatoria de score por todas las rondas
     ]
   ]
   let average sum-score / count turtles
-  ask turtles with [average * rounds-played > score] [ ;; Si la tortuga tiene un promedio mal h
+  ask turtles with [average * rounds-played > score] [ ;; Si la tortuga tiene un score menor al del promedio matarla
     if partner-turtle != nobody [
       end-partnership ;; Si la tortuga tiene un compañero terminar la relación antes de morir
     ]
     die
   ]
   let hatched 0
-  ask turtles with [average * rounds-played < score] [
+  ask turtles with [average * rounds-played < score] [ ;; Si la tortuga tiene un score mayor al del promedio genera una nueva
     set score average * rounds-played
-    hatch 1 [
+    hatch 1 [ ;; Crear un agente similar
       set score 0
       set partnered? false
       set partner nobody
@@ -152,7 +154,7 @@ to evolve
     set hatched hatched + 1
   ]
 
-  foreach n-values hatched [1] [
+  foreach n-values hatched [1] [ ;; Para cada tortuga nacida agregar el nuevo que nacio.
     ask turtles [
       set partner-history lput false partner-history
     ]
@@ -190,13 +192,17 @@ to partner-up ;;turtle procedure
   if (not partnered?) [              ;;make sure still not partnered
     rt (random-float 90 - random-float 90) fd 1     ;;move around randomly
     set partner one-of (turtles-at -1 0) with [ not partnered? ]
-    if partner != nobody and partner? [              ;;if successful grabbing a partner, partner up
+    if partner != nobody [              ;;if successful grabbing a partner, partner up;'
+      ifelse establish-relation? and member? partner blocked-turtles or member? self [blocked-turtles] of partner  [
+        set partner nobody
+      ] [
       set partnered? true
       set heading 270                   ;;face partner
       ask partner [
         set partnered? true
         set partner myself
         set heading 90
+        ]
       ]
     ]
   ]
@@ -225,20 +231,23 @@ to get-payoff
     set partner-defected? (not partner-defected?)
   ]
   ifelse partner-defected? [
+    end-partnership ;; Terminar la relación porque mi compañero me traiciono.
     ifelse defect-now? [
       set score (score + 1) set label 1
     ] [
       set score (score + 0) set label 0
+      set blocked-turtles fput partner blocked-turtles ;; No tratar de establecer una relacion con las tortugas que no cooperaron.
     ]
   ] [
     ifelse defect-now? [
+      end-partnership ;; Terminar la relación porque mi compañero me traiciono.
       set score (score + 5) set label 5
     ] [
       set score (score + 3) set label 3 ;; Si ambas cooperaron empezar una relación
-      if partner? [
-        set partner-turtle partner
+      if establish-relation? [
+        set partner-turtle partner ;; Inicia una relación con mi compañero
         ask partner [
-          set partner-turtle myself
+          set partner-turtle myself ;; Asignarme como compañero de mi compañero
         ]
       ]
     ]
@@ -478,7 +487,7 @@ n-cooperate
 n-cooperate
 0
 20
-5
+20
 1
 1
 NIL
@@ -578,7 +587,7 @@ SWITCH
 52
 evolution?
 evolution?
-1
+0
 1
 -1000
 
@@ -625,7 +634,7 @@ noise-factor
 noise-factor
 1
 100
-8
+39
 1
 1
 NIL
@@ -634,16 +643,20 @@ HORIZONTAL
 SWITCH
 751
 147
-860
+923
 180
-partner?
-partner?
-1
+establish-relation?
+establish-relation?
+0
 1
 -1000
 
 @#$#@#$#@
 ## WHAT IS IT?
+
+Daniel González González A01280648
+
+Jorge Armando Vázquez Ortiz A01196160
 
 This model is a multiplayer version of the iterated prisoner's dilemma. It is intended to explore the strategic implications that emerge when the world consists entirely of prisoner's dilemma like interactions. If you are unfamiliar with the basic concepts of the prisoner's dilemma or the iterated prisoner's dilemma, please refer to the PD BASIC and PD TWO PERSON ITERATED models found in the PRISONER'S DILEMMA suite.
 
@@ -698,6 +711,18 @@ TIT-FOR-TAT - If an opponent cooperates on this interaction cooperate on the nex
 UNFORGIVING - Cooperate until an opponent defects once, then always defect in each interaction with them.
 
 UNKNOWN - This strategy is included to help you try your own strategies. It currently defaults to Tit-for-Tat.
+
+### Evolution
+
+Turn on the evolution? switch to allow an agent to hatch new agents if they overall score is bettern than the average.
+
+### Noise
+
+The noise feature adds some noise to the agents and makes it think that an agent has defected when it hasn't.
+
+### Spatial Relation
+
+The spatial relation feature lets an agent establish an relationship with another agent only when they have cooperated.
 
 ### Plots
 
