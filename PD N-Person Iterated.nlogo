@@ -34,6 +34,7 @@ turtles-own [
   partner-history   ;;a list containing information about past interactions
                     ;;with other turtles (indexed by WHO values)
   rounds-played     ;;number of iterations that has been alive
+  partner-turtle    ;;the partner turtle
 ]
 
 
@@ -85,6 +86,7 @@ to setup-common-variables
     set partner nobody
     setxy random-xcor random-ycor
     set rounds-played 0
+    set partner-turtle nobody
   ]
   setup-history-lists ;;initialize PARTNER-HISTORY list in all turtles
 end
@@ -132,6 +134,9 @@ to evolve
   ]
   let average sum-score / count turtles
   ask turtles with [average * rounds-played > score] [ ;; Si la tortuga tiene un promedio mal h
+    if partner-turtle != nobody [
+      end-partnership ;; Si la tortuga tiene un compañero terminar la relación antes de morir
+    ]
     die
   ]
   let hatched 0
@@ -159,11 +164,20 @@ to clear-last-round
   ask partnered-turtles [ release-partners ]
 end
 
+to end-partnership
+  set partner-turtle nobody
+  ask partner [
+    set partner-turtle nobody
+  ]
+end
+
 ;;release partner and turn around to leave
 to release-partners
-  set partnered? false
-  set partner nobody
-  rt 180
+  if partner-turtle = nobody [
+   set partnered? false
+   set partner nobody
+   rt 180
+  ]
   set label ""
 end
 
@@ -176,7 +190,7 @@ to partner-up ;;turtle procedure
   if (not partnered?) [              ;;make sure still not partnered
     rt (random-float 90 - random-float 90) fd 1     ;;move around randomly
     set partner one-of (turtles-at -1 0) with [ not partnered? ]
-    if partner != nobody [              ;;if successful grabbing a partner, partner up
+    if partner != nobody and partner? [              ;;if successful grabbing a partner, partner up
       set partnered? true
       set heading 270                   ;;face partner
       ask partner [
@@ -220,7 +234,13 @@ to get-payoff
     ifelse defect-now? [
       set score (score + 5) set label 5
     ] [
-      set score (score + 3) set label 3
+      set score (score + 3) set label 3 ;; Si ambas cooperaron empezar una relación
+      if partner? [
+        set partner-turtle partner
+        ask partner [
+          set partner-turtle myself
+        ]
+      ]
     ]
   ]
 end
@@ -610,6 +630,17 @@ noise-factor
 1
 NIL
 HORIZONTAL
+
+SWITCH
+751
+147
+860
+180
+partner?
+partner?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
