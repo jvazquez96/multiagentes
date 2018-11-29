@@ -335,12 +335,25 @@ end
 ;;defaults to tit-for-tat
 ;;can you do better?
 to unknown
-  set num-unknown-games num-unknown-games + 1
-  set partner-defected? item ([who] of partner) partner-history
-  ifelse (partner-defected?) [
-    set defect-now? true
-  ] [
-    set defect-now? false
+;  set num-unknown-games num-unknown-games + 1
+;  set partner-defected? item ([who] of partner) partner-history
+;  ifelse (partner-defected?) [
+;    set defect-now? true
+;  ] [
+;    set defect-now? false
+;  ]
+
+  let action-to-take random 4 ; Obtener un numero random y elegir una estrategia dependiendo del indice
+  ifelse action-to-take = 0 [
+    defect
+  ][ ifelse action-to-take = 1 [
+       cooperate
+     ][ ifelse action-to-take = 2 [
+       tit-for-tat
+     ][
+       unforgiving
+      ]
+     ]
   ]
 end
 
